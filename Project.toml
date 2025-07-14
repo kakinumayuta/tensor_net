@@ -4,7 +4,9 @@ authors = ["kakinumayuta <kakinuma.y.068@ms.saitama-u.ac.jp>"]
 version = "0.1.0"
 
 [deps]
+ITensors = "9136182c-28ba-11e9-034c-db9fb085ebd5"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
+ITensors = "0.9.7"
 Test = "1.11.0"
