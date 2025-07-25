@@ -25,7 +25,7 @@ end
 #3脚テンソルの定義
 function three_leg_tensor_def(i::Index{Int64}, j::Index{Int64}, k::Index{Int64}, l::Index{Int64}, K_const::Float64)
     P = ITensor(i, j, k, l)
-    for a in 0:dim(i)-1, b in 0:dim(j)-1, c in 0:dim(k)-1, d in 0:1
+    for a in 0:dim(i)-1, b in 0:1, c in 0:dim(k)-1, d in 0:1
         val = four_leg_tensor_cal(a, b, c, d, K_const)
         P[i=>a+1, j=>b+1, k=>c+1, l=>d+1] = val
     end
