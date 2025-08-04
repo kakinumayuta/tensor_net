@@ -5,8 +5,10 @@ version = "0.1.0"
 
 [deps]
 ITensors = "9136182c-28ba-11e9-034c-db9fb085ebd5"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 ITensors = "0.9.7"
+Revise = "3.8.1"
 Test = "1.11.0"
