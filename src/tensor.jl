@@ -266,7 +266,7 @@ function Spin_Correlation(G::ITensor, W::ITensor, O::Float64)
     return b
 end
 
-function Expand(PR::ITensor, PC::ITensor, W::ITensor, α::Index{Int64}, β::Index{Int64}, ξ::Index{Int64}, η::Index{Int64}, i::Index{Int64}, j::Index{Int64}, k::Index{Int64}, l::Index{Int64})
+function Expand(PR::ITensor, PC::ITensor, W::ITensor, C::ITensor, α::Index{Int64}, β::Index{Int64}, ξ::Index{Int64}, η::Index{Int64}, i::Index{Int64}, j::Index{Int64}, k::Index{Int64}, l::Index{Int64})
     #3脚テンソル(横)の拡大
     PR2, ξ, α, ξi = Expand_PR(PR, W, α, k, ξ, i, j, l)
 

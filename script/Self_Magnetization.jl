@@ -44,63 +44,61 @@ PC2 = PC
 C2 = C
 
 
-for i in 1:5
-    #拡大
-    PR2, PC2, C2, ξ, α, η, β, C2 = ten.Expand(PR, PC, W, α, β, ξ, η, i, j, k, l)
+#拡大
+PR2, PC2, C2, ξ, α, η, β, C2 = ten.Expand(PR, PC, W, C, α, β, ξ, η, i, j, k, l)
 
-    #対角化
-    D, U, Ul = ten.Diagonal_C_matrix(C2, α, β)
+#対角化
+D, U, Ul = ten.Diagonal_C_matrix(C2, α, β)
 
-    #固有値の制限
-    χ_num = 2
-    χ = Index(χ_num, "χ")
-    ν = Index(χ_num, "ν")
-    μ = Index(χ_num, "μ")
-    σ = Index(χ_num, "σ")
+#固有値の制限
+χ_num = 2
+χ = Index(χ_num, "χ")
+ν = Index(χ_num, "ν")
+μ = Index(χ_num, "μ")
+σ = Index(χ_num, "σ")
 
-    #圧縮過程
-    resD, idx = ten.Restrict_Diagonal(D, χ_num, χ, χ)
-    resU = ten.Restrict_EigenvecsU(U, χ_num, β, χ, idx)
-    resUl = ten.Restrict_EigenvecsUl(Ul, χ_num, α, χ, idx)
+#圧縮過程
+resD, idx = ten.Restrict_Diagonal(D, χ_num, χ, χ)
+resU = ten.Restrict_EigenvecsU(U, χ_num, β, χ, idx)
+resUl = ten.Restrict_EigenvecsUl(Ul, χ_num, α, χ, idx)
 
-    #固有ベクトル(右)のコピー
-    resU2 = replaceinds(resU, (χ => ν, β => ξ))
-    resU3 = replaceinds(resU, (χ => μ, β => ϵ))
-    resU4 = replaceinds(resU, (χ => σ, β => θ))
+#固有ベクトル(右)のコピー
+resU2 = replaceinds(resU, (χ => ν, β => ξ))
+resU3 = replaceinds(resU, (χ => μ, β => ϵ))
+resU4 = replaceinds(resU, (χ => σ, β => θ))
 
-    #固有ベクトル(左)のコピー
-    resUl2 = replaceinds(resUl, (χ' => ν', α => λ))
-    resUl3 = replaceinds(resUl, (χ' => μ', α => γ))
-    resUl4 = replaceinds(resUl, (χ' => σ', α => η))
+#固有ベクトル(左)のコピー
+resUl2 = replaceinds(resUl, (χ' => ν', α => λ))
+resUl3 = replaceinds(resUl, (χ' => μ', α => γ))
+resUl4 = replaceinds(resUl, (χ' => σ', α => η))
 
-    #対角行列のコピー
-    resD2 = replaceinds(resD, (χ => ν, χ' => ν'))
-    resD3 = replaceinds(resD, (χ => μ, χ' => μ'))
-    resD4 = replaceinds(resD, (χ => σ, χ' => σ'))
+#対角行列のコピー
+resD2 = replaceinds(resD, (χ => ν, χ' => ν'))
+resD3 = replaceinds(resD, (χ => μ, χ' => μ'))
+resD4 = replaceinds(resD, (χ => σ, χ' => σ'))
 
-    #3脚テンソルのコピー
-    PRL = copy(PR2)
-    PCD = copy(PC2)
-    PCU = replaceinds(PCD, (β => ϵ, η => λ, k => i))
-    PRR = replaceinds(PRL, (α => γ, ξ => θ, l => j))
+#3脚テンソルのコピー
+PRL = copy(PR2)
+PCD = copy(PC2)
+PCU = replaceinds(PCD, (β => ϵ, η => λ, k => i))
+PRR = replaceinds(PRL, (α => γ, ξ => θ, l => j))
 
-    #3脚テンソルの圧縮
-    resPRL = resUl * PRL * resU2
-    resPCU = resUl2 * PCU * resU3
-    resPRR = resUl3 * PRR * resU4
-    resPCD = resUl4 * PCD * resU
+#3脚テンソルの圧縮
+resPRL = resUl * PRL * resU2
+resPCU = resUl2 * PCU * resU3
+resPRR = resUl3 * PRR * resU4
+resPCD = resUl4 * PCD * resU
 
-    #環境テンソル
-    G = resD * resPRL * resD2 * resPCU * resD3 * resPRR * resD4 * resPCD
+#環境テンソル
+G = resD * resPRL * resD2 * resPCU * resD3 * resPRR * resD4 * resPCD
 
-    #分配関数
-    O = G * W
+#分配関数
+O = G * W
 
-    #自発磁化
-    A = ten.Self_Magnetization(G, W, real(O[])) |> display
-    B = ten.Spin_Correlation(G, W, real(O[])) |> display
+#自発磁化
+A = ten.Self_Magnetization(G, W, real(O[])) |> display
+B = ten.Spin_Correlation(G, W, real(O[])) |> display
 
-    PR = PR2
-    PC = PC2
-    C = C2
-end
+PR = PR2
+PC = PC2
+C = C2
