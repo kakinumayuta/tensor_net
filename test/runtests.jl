@@ -144,6 +144,52 @@ end
     end
 end
 
-@testset "expand corner-matrix" begin
+
+@testset "Expand and Eigen ITensor" begin
+    #Index
+    #大きな足
+    α = Index(2, "α")
+    ξ = Index(2, "ξ")
+    β = Index(2, "β")
+    η = Index(2, "η")
+
+    #小さな足
+    i = Index(2, "i")
+    j = Index(2, "j")
+    k = Index(2, "k")
+    l = Index(2, "l")
+
+    #つぶす足
+    c1 = Index(2, "c1")
+    c2 = Index(2, "c2")
+
+    #定数K
+    K_const = -0.1
+
+    #ここがおかしい
+    #4脚テンソルの定義
+    W = ten.four_leg_tensor_def(i, j, k, l, K_const)
+    #2脚テンソルの定義
+    C = ten.two_leg_tensor_def(α, β, c1, c2, K_const)
+    #3脚テンソルの定義
+    PR = ten.three_leg_tensor_def(α, ξ, l, c1, K_const)
+    #3脚テンソルの定義
+    PC = ten.three_leg_tensor_def(β, η, k, c1, K_const)
+
+    #3脚テンソル(横)の拡大
+    PR2, ξ, α, ξi = ten.Expand_PR(PR, W, α, k, ξ, i)
+    #3脚テンソル(縦)の拡大
+    PC2, η, β, ηj = ten.Expand_PC(PC, W, β, l, η, j)
+    #角転送行列の拡大
+    C2 = ten.Expand_C(PR, C, PC, W, ξi, ηj, α, β)
+
+
+    D, U, Ul = ten.Diagonal_C_matrix(C2, α, β)
+
+    # 誤差チェック
+    diff = norm(C2 * U - Ul * D)
+
+    @test diff < 1e-11
 
 end
+

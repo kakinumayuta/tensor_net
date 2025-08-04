@@ -102,9 +102,131 @@ function Expand_C(PR::ITensor, C::ITensor, PC::ITensor, W::ITensor, ξi::ITensor
     return C2_ext
 end
 
+#角転送行列の対角化
+function Diagonal_C_matrix(C2::ITensor,α::Index{Int64},β::Index{Int64})
+    # 固有値分解
+    D, U = eigen(C2, α, β)
 
+    # インデックスの取り出し
+    dl = uniqueind(D, U)
+    dr = commonind(D, U)
 
+    # 正しい方法でUlを作成（置き換えは個別に！）
+    Ul = replaceinds(U, (β => α, dr => dl))
 
+    return D,U,Ul
+end
+
+#対角行列を絶対値の大きい順にソートする
+function Sort_Diagonal(D::ITensor)
+    Dnew=copy(D)
+
+    #対角要素の並び替え
+    for i in 1:size(D)[1]
+        for j in (i+1):size(D)[2]
+            if abs(real(Dnew[i,i])) < abs(real(Dnew[j,j]))
+                tmp=Dnew[i,i]
+                Dnew[i,i]=Dnew[j,j]
+                Dnew[j,j]=tmp
+            end
+        end
+    end
+ 
+    return Dnew
+end
+
+#対角行列を絶対値が大きい順にソートした時のインデックスを返す
+function Sort_idx(D::ITensor,i::Index{Int64},j::Index{Int64})
+    # 対角要素を取り出す
+    diag_elements=Float64[]
+    for i in 1:size(D)[1]
+        push!(diag_elements,D[i,i])
+    end
+    
+    # 絶対値でソートしたインデックスを取得
+    sorted_indices = sortperm(abs.(diag_elements),rev=true)
+    
+    return sorted_indices
+end
+
+#固有値をソートし並べ替え、制限した後の対角行列を返す
+function Restrict_Diagonal(D::ITensor, χ::Int64,a1::Index{Int64},a2::Index{Int64})
+    sortedD=Sort_Diagonal(D)
+    tmp1=Index(size(D)[1],"t1")
+    tmp2=Index(size(D)[2],"t2")
+    idx=Sort_idx(D::ITensor,tmp1::Index{Int64},tmp2::Index{Int64})
+
+    #制限の必要がなければ返す
+    if size(D)[1]<χ
+        return sortedD ,idx
+    end
+
+    resD=ITensor(a1',a2)
+
+    for i in 1:χ
+        resD[i,i]=sortedD[i,i]
+    end
+
+    return resD,idx
+end
+
+#固有値をソートし並べ替えた時のインデックスで並び替え、制限した後の対角化行列を返す
+function Restrict_EigenvecsU(U::ITensor, χ::Int64,a1::Index{Int64},a2::Index{Int64},idx::Vector{Int64})
+    #並び替え
+    newU=copy(U)
+    
+    for i in 1:size(U)[1]
+        cou=1
+        for j in idx
+            newU[i,cou]=U[i,j]
+            cou+=1
+        end
+    end
+    
+    #制限の必要がなければ返す
+    if size(U)[1]<χ
+        return newU
+    end
+
+    #大きさを制限
+    resU=ITensor(a1,a2)
+    for i in 1:size(U)[1]
+        for j in 1:χ
+            resU[i,j]=newU[i,j]
+        end
+    end
+
+    return resU
+end
+
+#固有値をソートし並べ替えた時のインデックスで並び替え、制限した後の対角化行列を返す(左)
+function Restrict_EigenvecsUl(Ul::ITensor, χ::Int64,a1::Index,a2::Index)
+    #並び替え
+    newUl=copy(Ul)
+    
+    for i in 1:size(Ul)[1]
+        cou=1
+        for j in idx
+            newUl[i,cou]=Ul[i,j]
+            cou+=1
+        end
+    end
+
+    #制限の必要がなければ返す
+    if size(Ul)[1]<χ
+        return Ul
+    end
+
+    #大きさを制限
+    resUl=ITensor(a2',a1)
+    for i in 1:χ
+        for j in 1:size(Ul)[2]
+            resUl[i,j]=newUl[i,j]
+        end
+    end
+
+    return resUl
+end
 
 
 end # module tensor
