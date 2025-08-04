@@ -51,6 +51,57 @@ function two_leg_tensor_def(i::Index{Int64}, j::Index{Int64}, k::Index{Int64}, l
     return C * δ_k * δ_l
 end
 
+#3脚テンソル(横)の拡大
+function Expand_PR(PR::ITensor, W::ITensor, α::Index{Int64}, k::Index{Int64}, ξ::Index{Int64}, i::Index{Int64})
+    #拡大
+    PR2 = PR * W
+
+    #文字の結合
+    αk = combiner(α, k)
+    ξi = combiner(ξ, i)
+
+    PR2_ext = αk * PR2
+    ξ = Index(dim(uniqueinds(αk)[1]), "ξ")
+    replaceinds!(PR2_ext, uniqueinds(αk)[1] => ξ)
+
+    PR2_ext = PR2_ext * ξi
+    α = Index(dim(uniqueinds(ξi)[1]), "α")
+    replaceinds!(PR2_ext, uniqueinds(ξi)[1] => α)
+
+    return PR2_ext, ξ, α, ξi
+end
+
+#3脚テンソル(縦)の拡大
+function Expand_PC(PC::ITensor, W::ITensor, β::Index{Int64}, l::Index{Int64}, η::Index{Int64}, j::Index{Int64})
+    PC2 = PC * W
+    βl = combiner(β, l)
+    ηj = combiner(η, j)
+
+    PC2_ext = βl * PC2
+    η = Index(dim(uniqueinds(βl)[1]), "η")
+    replaceinds!(PC2_ext, uniqueinds(βl)[1] => η)
+
+    PC2_ext = PC2_ext * ηj
+    β = Index(dim(uniqueinds(ηj)[1]), "β")
+    replaceinds!(PC2_ext, uniqueinds(ηj)[1] => β)
+
+    return PC2_ext, η, β, ηj
+end
+
+#角転送行列の拡大
+function Expand_C(PR::ITensor, C::ITensor, PC::ITensor, W::ITensor, ξi::ITensor, ηj::ITensor, α::Index{Int64}, β::Index{Int64})
+    #拡大
+    C2 = PR * C * PC * W
+
+    #文字の結合
+    C2_ext = ξi * C2 * ηj
+
+    replaceinds!(C2_ext, uniqueinds(ξi)[1] => α)
+    replaceinds!(C2_ext, uniqueinds(ηj)[1] => β)
+
+    return C2_ext
+end
+
 
 
 
