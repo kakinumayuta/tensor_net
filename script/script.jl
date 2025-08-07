@@ -96,9 +96,8 @@ G = resD * resPRL * resD2 * resPCU * resD3 * resPRR * resD4 * resPCD
 O = G * W
 
 #自発磁化
-A = ten.Self_Magnetization(G, W, real(O[])) |> display
-B = ten.Spin_Correlation(G, W, real(O[])) |> display
+A = ten.Self_Magnetization(G, W, real(O[])) 
+B = ten.Spin_Correlation(G, W, real(O[])) 
 
-PR = PR2
-PC = PC2
-C = C2
+println("自発磁化=$A")
+println("スピン相関=$B")
