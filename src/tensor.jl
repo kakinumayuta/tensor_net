@@ -276,8 +276,75 @@ function Expand(PR::ITensor, PC::ITensor, W::ITensor, C::ITensor, α::Index{Int6
     #角転送行列の拡大
     C2 = Expand_C(PR, C, PC, W, ξi, ηj, α, β)
 
-    return PR2, PC2, C2, ξ, α, η, β, C2
+    return PR2, PC2, C2, ξ, α, η, β
 end
 
+#圧縮とコピー
+function Compression_and_Copy(C2::ITensor, PR2::ITensor, PC2::ITensor, α::Index{Int64}, β::Index{Int64}, ξ::Index{Int64}, η::Index{Int64}, i::Index{Int64}, j::Index{Int64}, k::Index{Int64}, l::Index{Int64}, χ_num::Int64, n::Int64)
+    #コピーのための足の定義
+    λ = Index(2^(n + 1), "λ")
+    γ = Index(2^(n + 1), "γ")
+    ϵ = Index(2^(n + 1), "ϵ")
+    θ = Index(2^(n + 1), "θ")
+
+    #対角化
+    D, U, Ul = Diagonal_C_matrix(C2, α, β)
+
+    #固有値の制限 χnum
+    χ = Index(χ_num, "χ")
+    ν = Index(χ_num, "ν")
+    μ = Index(χ_num, "μ")
+    σ = Index(χ_num, "σ")
+
+    #圧縮過程
+    resD, idx = Restrict_Diagonal(D, χ_num, χ, χ)
+    resU = Restrict_EigenvecsU(U, χ_num, β, χ, idx)
+    resUl = Restrict_EigenvecsUl(Ul, χ_num, α, χ, idx)
+
+    #固有ベクトル(右)のコピー
+    resU2 = replaceinds(resU, (χ => ν, β => ξ))
+    resU3 = replaceinds(resU, (χ => μ, β => ϵ))
+    resU4 = replaceinds(resU, (χ => σ, β => θ))
+
+    #固有ベクトル(左)のコピー
+    resUl2 = replaceinds(resUl, (χ' => ν', α => λ))
+    resUl3 = replaceinds(resUl, (χ' => μ', α => γ))
+    resUl4 = replaceinds(resUl, (χ' => σ', α => η))
+
+    #対角行列のコピー
+    resD2 = replaceinds(resD, (χ => ν, χ' => ν'))
+    resD3 = replaceinds(resD, (χ => μ, χ' => μ'))
+    resD4 = replaceinds(resD, (χ => σ, χ' => σ'))
+
+    #3脚テンソルのコピー
+    PRL = copy(PR2)
+    PCD = copy(PC2)
+    @show PCD
+    PCU = replaceinds(PCD, (β => ϵ, η => λ, k => i))
+    PRR = replaceinds(PRL, (α => γ, ξ => θ, l => j))
+
+    #3脚テンソルの圧縮
+    resPRL = resUl * PRL * resU2
+    resPCU = resUl2 * PCU * resU3
+    resPRR = resUl3 * PRR * resU4
+    resPCD = resUl4 * PCD * resU
+
+    return resD, resD2, resD3, resD4, resU, resU2, resU3, resU4, resUl, resUl2, resUl3, resUl4, resPRL, resPRR, resPCU, resPCD
+
+end
+
+function Observation(W::ITensor, resD::ITensor, resPRL::ITensor, resD2::ITensor, resPCU::ITensor, resD3::ITensor, resPRR::ITensor, resD4::ITensor, resPCD::ITensor)
+    #環境テンソル
+    G = resD * resPRL * resD2 * resPCU * resD3 * resPRR * resD4 * resPCD
+
+    #分配関数
+    O = G * W
+
+    #自発磁化
+    A = Self_Magnetization(G, W, real(O[]))
+    B = Spin_Correlation(G, W, real(O[]))
+
+    return A, B
+end
 
 end # module tensor

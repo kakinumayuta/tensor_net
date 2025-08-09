@@ -177,9 +177,9 @@ end
     PC = ten.three_leg_tensor_def(β, η, k, c1, K_const)
 
     #3脚テンソル(横)の拡大
-    PR2, ξ, α, ξi = ten.Expand_PR(PR, W, α, k, ξ, i)
+    PR2, ξ, α, ξi = ten.Expand_PR(PR, W, α, k, ξ, i, j, l)
     #3脚テンソル(縦)の拡大
-    PC2, η, β, ηj = ten.Expand_PC(PC, W, β, l, η, j)
+    PC2, η, β, ηj = ten.Expand_PC(PC, W, β, l, η, j,i, k)
     #角転送行列の拡大
     C2 = ten.Expand_C(PR, C, PC, W, ξi, ηj, α, β)
 
