@@ -1,28 +1,25 @@
 using ITensors
+using Plots
 import tensor as ten
 
-#Index
-#大きな足
-α = Index(2, "α")
-ξ = Index(2, "ξ")
-β = Index(2, "β")
-η = Index(2, "η")
-
-#小さな足
-i = Index(2, "i")
-j = Index(2, "j")
-k = Index(2, "k")
-l = Index(2, "l")
-
-#固定端の場合⇒1、自由端の場合⇒2
-c1 = Index(2, "c1")
-c2 = Index(2, "c2")
+#Indexの定義
+α, β, ξ, η, i, j, k, l, c1, c2 = ten.Index_def()
 
 #βJ
-K_const = -0.5
+K_const = -0.01
+
+#試行回数
+n = 10
 
 #圧縮後のサイズ
-χ_num = 2
+χ_num = 4
+
+#格子サイズを格納する配列
+Lvec = Int64[]
+
+#物理量を格納する配列
+SMvec = ComplexF64[]
+SCvec = ComplexF64[]
 
 
 #4脚テンソルの定義
@@ -37,28 +34,87 @@ PR = ten.three_leg_tensor_def(α, ξ, l, c1, K_const)
 #3脚テンソルの定義
 PC = ten.three_leg_tensor_def(β, η, k, c1, K_const)
 
-#ベース
-PRbf = PR
-PCbf = PC
-Cbf = C
 
-#回数
-n = 1
+#対角化
+D, U, Ul = ten.Diagonal_C_matrix(C, α, β)
 
-#拡大
-PRaf, PCaf, Caf, newξ, α, newη, β = ten.Expand(PRbf, PCbf, W, Cbf, α, β, ξ, η, i, j, k, l)
+#圧縮(圧縮する必要のない場合はそのままのサイズで帰ってくる)
+resD, resD2, resD3, resD4, resU, resU2, resU3, resU4, resUl, resUl2, resUl3, resUl4, resPRL, resPRR, resPCU, resPCD = ten.Compression_and_Copy(D, U, Ul, PR, PC, α, β, ξ, η, i, j, k, l, χ_num, 0)
 
-@show PCaf
-#圧縮
-resD, resD2, resD3, resD4, resU, resU2, resU3, resU4, resUl, resUl2, resUl3, resUl4, resPRL, resPRR, resPCU, resPCD = ten.Compression_and_Copy(Caf, PRaf, PCaf, α, β, newξ, newη, i, j, k, l, χ_num, n)
 
 #観測
-A, B = ten.Observation(W, resD, resPRL, resD2, resPCU, resD3, resPRR, resD4, resPCD)
+SM, SC = ten.Observation(W, resD, resPRL, resD2, resPCU, resD3, resPRR, resD4, resPCD)
 
-println("自発磁化=$A")
-println("スピン相関=$B")
+#物理量の格納
+push!(SMvec, SM)
+push!(SCvec, SC)
 
-#テンソルの更新
-PRbf = PRaf
-PCbf = PCaf
-Cbf = Caf
+#格子のサイズ
+Lsize = 2 ^ (0 + 1) + 1
+
+#格子サイズの格納
+push!(Lvec, Lsize)
+
+#出力
+println("$Lsize×$Lsize")
+println("Self Magnetization=$SM")
+println("Spin Correlation=$SC")
+
+#拡大前の処理
+global PRbf = PR
+global PCbf = PC
+global Cbf = C
+
+global αbf = α
+global βbf = β
+global ξbf = ξ
+global ηbf = η
+
+
+for L in 1:n
+    #拡大
+    PRaf, PCaf, Caf, ξaf, αaf, ηaf, βaf = ten.Expand(PRbf, PCbf, W, Cbf, αbf, βbf, ξbf, ηbf, i, j, k, l)
+
+
+    #対角化
+    D, U, Ul = ten.Diagonal_C_matrix(Caf, αaf, βaf)
+
+    #圧縮(圧縮する必要のない場合はそのままのサイズで帰ってくる)
+    resD, resD2, resD3, resD4, resU, resU2, resU3, resU4, resUl, resUl2, resUl3, resUl4, resPRL, resPRR, resPCU, resPCD = ten.Compression_and_Copy(D, U, Ul, PRaf, PCaf, αaf, βaf, ξaf, ηaf, i, j, k, l, χ_num, L)
+
+
+    #観測
+    SM, SC = ten.Observation(W, resD, resPRL, resD2, resPCU, resD3, resPRR, resD4, resPCD)
+
+    #物理量の格納
+    push!(SMvec, SM)
+    push!(SCvec, SC)
+
+    #格子のサイズ
+    Lsize = 2 ^ (L + 1) + 1
+
+    #格子サイズの格納
+    push!(Lvec, Lsize)
+
+    #出力
+    println("$Lsize×$Lsize")
+    println("Self Magnetization=$SM")
+    println("Spin Correlation=$SC")
+
+    #テンソルの更新
+    global PRbf = PRaf
+    global PCbf = PCaf
+    global Cbf = Caf
+
+    #Indexの更新
+    global αbf = αaf
+    global βbf = βaf
+    global ξbf = ξaf
+    global ηbf = ηaf
+end
+
+#グラフの出力
+fig = plot(Lvec, real(SMvec))
+savefig(fig, "Self_Magnetization.png")
+fig = plot(Lvec, real(SCvec))
+savefig(fig, "Spin_Correlation.png")

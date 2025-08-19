@@ -1,6 +1,28 @@
 module tensor
 using ITensors
 
+#Indexの定義
+function Index_def()
+    #Index
+    #大きな足
+    α = Index(2, "α")
+    ξ = Index(2, "ξ")
+    β = Index(2, "β")
+    η = Index(2, "η")
+
+    #小さな足
+    i = Index(2, "i")
+    j = Index(2, "j")
+    k = Index(2, "k")
+    l = Index(2, "l")
+
+    #固定端の場合⇒1、自由端の場合⇒2
+    c1 = Index(2, "c1")
+    c2 = Index(2, "c2")
+
+    return α, β, ξ, η, i, j, k, l, c1, c2
+end
+
 #4脚テンソルの中身を計算する。a,b,c,dは0or1 Kは逆温度を含む定数
 function four_leg_tensor_cal(a::Int64, b::Int64, c::Int64, d::Int64, K::Float64)
     # 0 or 1 のビットを ±1 に変換し、隣接ペアの積を計算
@@ -144,7 +166,7 @@ function Sort_idx(D::ITensor, i::Index{Int64}, j::Index{Int64})
     # 対角要素を取り出す
     diag_elements = Float64[]
     for i in 1:size(D)[1]
-        push!(diag_elements, D[i, i])
+        push!(diag_elements, real(D[i, i]))
     end
 
     # 絶対値でソートしたインデックスを取得
@@ -160,9 +182,9 @@ function Restrict_Diagonal(D::ITensor, χ::Int64, a1::Index{Int64}, a2::Index{In
     tmp2 = Index(size(D)[2], "t2")
     idx = Sort_idx(D::ITensor, tmp1::Index{Int64}, tmp2::Index{Int64})
 
-    #制限の必要がなければ返す
+    #制限の必要がなければχをそのままの値にする
     if size(D)[1] < χ
-        return sortedD, idx
+        χ = size(D)[1]
     end
 
     resD = ITensor(a1', a2)
@@ -187,9 +209,9 @@ function Restrict_EigenvecsU(U::ITensor, χ::Int64, a1::Index{Int64}, a2::Index{
         end
     end
 
-    #制限の必要がなければ返す
+    #制限の必要がなければχをそのままの値にする
     if size(U)[1] < χ
-        return newU
+        χ = size(U)[1]
     end
 
     #大きさを制限
@@ -216,9 +238,9 @@ function Restrict_EigenvecsUl(Ul::ITensor, χ::Int64, a1::Index, a2::Index, idx:
         end
     end
 
-    #制限の必要がなければ返す
+    #制限の必要がなければχをそのままの値にする
     if size(Ul)[1] < χ
-        return Ul
+        χ = size(Ul)[1]
     end
 
     #大きさを制限
@@ -280,15 +302,12 @@ function Expand(PR::ITensor, PC::ITensor, W::ITensor, C::ITensor, α::Index{Int6
 end
 
 #圧縮とコピー
-function Compression_and_Copy(C2::ITensor, PR2::ITensor, PC2::ITensor, α::Index{Int64}, β::Index{Int64}, ξ::Index{Int64}, η::Index{Int64}, i::Index{Int64}, j::Index{Int64}, k::Index{Int64}, l::Index{Int64}, χ_num::Int64, n::Int64)
+function Compression_and_Copy(D::ITensor, U::ITensor, Ul::ITensor, PR2::ITensor, PC2::ITensor, α::Index{Int64}, β::Index{Int64}, ξ::Index{Int64}, η::Index{Int64}, i::Index{Int64}, j::Index{Int64}, k::Index{Int64}, l::Index{Int64}, χ_num::Int64, n::Int64)
     #コピーのための足の定義
     λ = Index(2^(n + 1), "λ")
     γ = Index(2^(n + 1), "γ")
     ϵ = Index(2^(n + 1), "ϵ")
     θ = Index(2^(n + 1), "θ")
-
-    #対角化
-    D, U, Ul = Diagonal_C_matrix(C2, α, β)
 
     #固有値の制限 χnum
     χ = Index(χ_num, "χ")
@@ -319,7 +338,6 @@ function Compression_and_Copy(C2::ITensor, PR2::ITensor, PC2::ITensor, α::Index
     #3脚テンソルのコピー
     PRL = copy(PR2)
     PCD = copy(PC2)
-    @show PCD
     PCU = replaceinds(PCD, (β => ϵ, η => λ, k => i))
     PRR = replaceinds(PRL, (α => γ, ξ => θ, l => j))
 
